@@ -1,0 +1,59 @@
+HOME = /home/lyang/files
+MQKHOME = /home/mqk/local
+CBLASSRC = $(HOME)/CBLAS/src
+CBLASINC = $(HOME)/CBLAS/include
+CINC = $(HOME)/CBLAS/lib
+FINC = $(HOME)/BLAS
+HEALPIXSRC = $(MQKHOME)/Healpix_2.12a/src/cxx/generic_gcc/include
+HEALPIXLIB = $(MQKHOME)/Healpix_2.12a/src/cxx/generic_gcc/lib
+HEALPIXCXX = $(MQKHOME)/Healpix_2.12a/src/cxx/cxxsupport
+HEALPIXC  = $(MQKHOME)//Healpix_2.12a/src/cxx/Healpix_cxx
+FG = 
+
+all: clean add_particles.o skymap.o tipsy_io.o VL2_debug.o prepare.o readfiles.o setparams.o main.o
+	gfortran -o ./bin/doit_VL2 add_particles.o skymap.o tipsy_io.o VL2_debug.o \
+		prepare.o readfiles.o setparams.o main.o \
+		$(CINC)/cblas_LINUX.a $(FINC)/blas_LINUX.a \
+		$(HEALPIXLIB)/libcxxsupport.a $(HEALPIXLIB)/libcfitsio.a \
+		 $(HEALPIXLIB)/libhealpix_cxx.a -lstdc++ $(FG)
+
+setfg:
+	FG=-pg
+
+profile: setfg all
+
+
+prepare.o: prepare.h structures.h info.h VL2_debug.h prepare.cpp
+	g++ -c -I$(CBLASSRC) -I$(CBLASINC) prepare.cpp $(FG)
+
+readfiles.o: prepare.h structures.h info.h VL2_debug.h readfiles.cpp
+	g++ -c -I$(CBLASSRC) -I$(CBLASINC) readfiles.cpp $(FG)
+
+setparams.o:  prepare.h structures.h info.h VL2_debug.h setparams.cpp
+	g++ -c -I$(CBLASSRC) -I$(CBLASINC) setparams.cpp $(FG)
+
+main.o:  prepare.h structures.h info.h VL2_debug.h main.cpp
+	g++ -c -I$(CBLASSRC) -I$(CBLASINC) main.cpp  -I$(HEALPIXSRC) -L$(HEALPIXLIB) -I$(HEALPIXCXX) $(FG)
+
+VL2_debug.o: structures.h info.h VL2_debug.h VL2_debug.cpp
+	g++ -c -I$(CBLASSRC) -I$(CBLASINC) VL2_debug.cpp $(FG)
+
+tipsy_io.o: tipsydefs.h tipsy_io.c
+	g++ -c tipsy_io.c $(FG)
+
+skymap.o: 
+	g++ -c skymap.cpp  -I$(CBLASSRC) -I$(CBLASINC) -I$(HEALPIXSRC) -L$(HEALPIXLIB) -I$(HEALPIXCXX) $(FG)
+
+add_particles.o:
+	g++ -c add_particles.cc -Wall -fPIC -I$(HEALPIXSRC) -L$(HEALPIXLIB) -I$(HEALPIXCXX) $(FG)
+
+clean:
+	rm -f VL2_debug.o tipsy_io.o prepare.o readfiles.o setparams.o main.o skymap.o add_particles.o bin/doit_VL2
+
+svn:
+	svn commit -m "update by make"
+
+map2tga:
+	cc  map2tga.cc -c -Wall -fPIC -I$(HEALPIXSRC) -I$(HEALPIXC) -I$(HEALPIXCXX) -L$(HEALPIXLIB) -openmp
+	#cc -o map2tga.o $(HEALPIXLIB)/libcxxsupport.a $(HEALPIXLIB)/libcfitsio.a \
+                 $(HEALPIXLIB)/libhealpix_cxx.a 
