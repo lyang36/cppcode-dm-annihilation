@@ -1,0 +1,1 @@
+Cpp version of the dark-matter annihilation
